@@ -1,6 +1,5 @@
 import json
 import logging
-import mimetypes
 import os
 
 import azure.functions as func
@@ -20,18 +19,9 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
     images_container = blob_service_client.get_container_client("images")
     image_list = images_container.list_blobs()
     html = ""
-    filename = "index.html"
-
+    image_list = sorted(image_list, key=lambda x: x.last_modified, reverse=True)
     for image in image_list:
-        # print(image)
         image_client = images_container.get_blob_client(image.name)
-        # print(image_client.url)
-        html += f"<h3>{image_client.blob_name}</h3><br/>"
+        html += f"<h3>{image_client.blob_name}</h3> &nbsp <i> Last Modified on </i> {image.last_modified}<br/>"
         html += f"<img src='{image_client.url}'/><br>"
-
-    with open(filename, "w") as f:
-        f.write(html)
-
-    with open(filename, "rb") as f:
-        mimetype = mimetypes.guess_type(filename)
-        return func.HttpResponse(f.read(), mimetype=mimetype[0])
+    return func.HttpResponse(html, mimetype="text/html")
